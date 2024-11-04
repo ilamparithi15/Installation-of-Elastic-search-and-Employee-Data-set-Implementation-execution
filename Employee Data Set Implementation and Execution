@@ -1,0 +1,64 @@
+import sqlite3
+
+class EmployeeDB:
+    def __init__(self):
+        self.conn = sqlite3.connect(':memory:')
+        self.cursor = self.conn.cursor()
+
+    def create_coll(self, coll_name):
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {coll_name} (EmpID TEXT, FullName TEXT, JobTitle TEXT, Department TEXT, BusinessUnit TEXT, Gender TEXT, Ethnicity TEXT, Age INTEGER, HireDate TEXT, AnnualSalary REAL, BonusPercent REAL, Country TEXT, City TEXT, ExitDate TEXT)")
+        self.conn.commit()
+
+    def index_data(self, coll_name, exclude_col):
+        employee_data = [
+            ('E02002', 'Kai Le', 'Controls Engineer', 'Engineering', 'Manufacturing', 'Male', 'Asian', 47, '02-05-2022', 92368, 0, 'United States', 'Columbus', ''),
+            ('E02003', 'Robert Patel', 'Analyst', 'Sales', 'Corporate', 'Male', 'Asian', 58, '10/23/2013', 45703, 0, 'United States', 'Chicago', ''),
+            ('E02004', 'Cameron Lo', 'Network Administrator', 'IT', 'Research & Development', 'Male', 'Asian', 34, '3/24/2019', 83576, 0, 'China', 'Shanghai', ''),
+            # Add more employee data as necessary
+        ]
+
+        for data in employee_data:
+            values = ', '.join(['?' if col != exclude_col else 'NULL' for col in ['EmpID', 'FullName', 'JobTitle', 'Department', 'BusinessUnit', 'Gender', 'Ethnicity', 'Age', 'HireDate', 'AnnualSalary', 'BonusPercent', 'Country', 'City', 'ExitDate']])
+            self.cursor.execute(f"INSERT INTO {coll_name} VALUES ({values})", data)
+        self.conn.commit()
+
+    def search_in_coll(self, coll_name, col_name, col_value):
+        self.cursor.execute(f"SELECT * FROM {coll_name} WHERE {col_name} = ?", (col_value,))
+        return self.cursor.fetchall()
+
+    def emp_count(self, coll_name):
+        self.cursor.execute(f"SELECT COUNT(*) FROM {coll_name}")
+        return self.cursor.fetchone()[0]
+
+    def del_emp(self, coll_name, emp_id):
+        self.cursor.execute(f"DELETE FROM {coll_name} WHERE EmpID = ?", (emp_id,))
+        self.conn.commit()
+
+    def get_dep_facet(self, coll_name):
+        self.cursor.execute(f"SELECT Department, COUNT(*) FROM {coll_name} GROUP BY Department")
+        return self.cursor.fetchall()
+
+db = EmployeeDB()
+
+name_collection = 'Hash_Ilamparithi'
+phone_collection = 'Hash_1234'  # replace with your last four digits
+
+db.create_coll(name_collection)
+db.create_coll(phone_collection)
+
+print(db.emp_count(name_collection))
+db.index_data(name_collection, 'Department')
+db.index_data(phone_collection, 'Gender')
+
+print(db.emp_count(name_collection))
+
+db.del_emp(name_collection, 'E02003')
+
+print(db.emp_count(name_collection))
+
+print(db.search_in_coll(name_collection, 'Department', 'IT'))
+print(db.search_in_coll(name_collection, 'Gender', 'Male'))
+print(db.search_in_coll(phone_collection, 'Department', 'IT'))
+
+print(db.get_dep_facet(name_collection))
+print(db.get_dep_facet(phone_collection))
